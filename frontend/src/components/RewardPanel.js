@@ -3,10 +3,24 @@ import axios from 'axios';
 
 const API = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? 'https://distraction-blocker-x30r.onrender.com/api' : 'http://localhost:5000/api');
 
+const MOTIVATIONAL_QUOTES = [
+    "Stop being lazy trash, finish that task NOW.",
+    "Your excuses are pathetic. Get to work.",
+    "While you scroll, winners are crushing it. Move.",
+    "Quit talking. Start doing, you are weak.",
+    "Future you hates this lazy version of you.",
+    "You're one \"tomorrow\" away from total failure.",
+    "Less talented people are outworking you. Burn.",
+    "Discipline beats your bullshit motivation. Grind.",
+    "Get angry at your laziness and finish it.",
+    "Stop wasting life. Complete every task NOW."
+];
+
 function RewardPanel({ stats }) {
     const [remaining, setRemaining] = useState(0);
     const [active, setActive] = useState(false);
     const timerRef = useRef(null);
+    const [quote] = useState(() => MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]);
 
     // Sync with server state on mount and periodically (less frequently)
     const syncWithServer = async () => {
@@ -137,7 +151,12 @@ function RewardPanel({ stats }) {
                 totalTasks === 0 ? (
                     <div className="reward-hint">📝 No tasks in your list yet</div>
                 ) : tasksPending > 0 ? (
-                    <div className="reward-hint">🔒 Finish {tasksPending} more tasks to unlock</div>
+                    <div style={{ marginTop: '10px' }}>
+                        <div className="reward-hint">🔒 Finish {tasksPending} more tasks to unlock</div>
+                        <div style={{ marginTop: '12px', fontWeight: 'bold', color: '#ff4d4f', fontStyle: 'italic', fontSize: '0.95em' }}>
+                            {quote}
+                        </div>
+                    </div>
                 ) : null
             )}
         </div>

@@ -39,20 +39,35 @@ async function setupSyncWorker() {
   const sync = async () => {
     try {
       const users = await User.find({});
-      const sitesToBlock = [];
+      const allBlockedDOMAINS = new Set();
+      const unblockedDOMAINS = new Set();
 
       for (const user of users) {
-        // A user's sites should be blocked IF they have no active reward
         const hasReward = user.rewardActive && user.rewardEndTime > new Date();
+        const userSites = await BlockedSite.find({ userId: user._id });
         
-        if (!hasReward) {
-          const userSites = await BlockedSite.find({ userId: user._id });
-          sitesToBlock.push(...userSites);
+        userSites.forEach(site => {
+          const domain = HostsService.extractDomain(site.url);
+          if (domain) {
+            if (hasReward) {
+              unblockedDOMAINS.add(domain);
+            } else {
+              allBlockedDOMAINS.add(domain);
+            }
+          }
+        });
+      }
+      
+      const finalSitesToBlock = [];
+      for (const domain of allBlockedDOMAINS) {
+        // If the domain is unblocked by ANY user's active reward, do not block it
+        if (!unblockedDOMAINS.has(domain)) {
+          finalSitesToBlock.push({ url: domain });
         }
       }
       
       // Sync all accumulated blocked sites once
-      await HostsService.syncHosts(sitesToBlock, false);
+      await HostsService.syncHosts(finalSitesToBlock, false);
     } catch (err) {
       console.error('[SyncWorker] Error:', err.message);
     }

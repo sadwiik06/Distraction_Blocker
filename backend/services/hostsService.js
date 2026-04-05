@@ -42,6 +42,14 @@ class HostsService {
 
       const finalContent = cleanContent.trimEnd() + newBlock;
       fs.writeFileSync(HOSTS_PATH, finalContent, 'utf8');
+      
+      // Attempt to flush Windows DNS cache so changes take effect faster
+      if (os.platform() === 'win32') {
+        require('child_process').exec('ipconfig /flushdns', (error) => {
+          if (error) console.error('[HostsService] Failed to flush DNS:', error.message);
+        });
+      }
+
       console.log(`[HostsService] Synced: ${canAccess ? 'UNBLOCKED' : 'BLOCKED'} ${urls.length} sites`);
     } catch (err) {
       if (err.code === 'EPERM' || err.code === 'EACCES') {
