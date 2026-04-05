@@ -36,7 +36,7 @@ router.get('/can-access', protect, async(req,res)=>{
             completed: false,
         });
         const hasReward = req.user.rewardActive && req.user.rewardEndTime > new Date();
-        const canAccess = incompletedTasks === 0|| hasReward;
+        const canAccess = hasReward;
         res.json({
             success: true,
             canAccess,

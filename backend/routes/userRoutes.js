@@ -70,6 +70,9 @@ router.get("/stats", protect, async (req, res) => {
             userId: req.user._id,
             completed: false
         });
+        const totalTasks = await Task.countDocuments({
+            userId: req.user._id
+        });
         
         res.json({
             streak: req.user.streak,
@@ -77,8 +80,9 @@ router.get("/stats", protect, async (req, res) => {
             totalTasksCompleted: req.user.totalTasksCompleted,
             totalFocusTime: req.user.totalFocusTime,
             rewardActive: req.user.rewardActive,
-            rewardTimeRemaining: req.user.rewardTimeRemaining,
-            incompleteTasks: incompleteTask
+            rewardEndTime: req.user.rewardEndTime,
+            incompleteTasks: incompleteTask,
+            totalTasks: totalTasks
         });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -112,43 +116,18 @@ router.put('/profile', protect, async (req, res) => {
     }
 });
 
-//starting reqrd timer
-router.post("/start-reward", protect, async (req, res) => {
-    try {
-        const { minutes } = req.body;
-        let user = await User.findById(req.user._id);
-        if (!user) {
-            return res.status(404).json({ success: false, message: "User not found" });
-        }
-        user.rewardActive = true;
-        user.rewardTimeRemaining = minutes * 60;
-        await user.save();
-
-        setTimeout(async () => {
-            let updatedUser = await User.findById(req.user._id);
-            if(updatedUser) {
-                updatedUser.rewardActive = false;
-                updatedUser.rewardTimeRemaining = 0;
-                await updatedUser.save();
-            }
-        }, minutes * 60 * 1000);
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
-    }
-});
-
 // can access themed things to do
 router.get("/can-access", protect, async (req, res) => {
     try {
         const incompleteTasks = await Task.countDocuments({ userId: req.user._id, completed: false });
         const user = await User.findById(req.user._id);
-        const canAccess = incompleteTasks === 0 || (user && user.rewardActive);
+        const hasReward = user && user.rewardActive && user.rewardEndTime > new Date();
+        const canAccess = hasReward;
 
         res.json({
             canAccess,
             remainingTasks: incompleteTasks,
-            rewardActive: user?.rewardActive || false
+            rewardActive: hasReward
         });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
